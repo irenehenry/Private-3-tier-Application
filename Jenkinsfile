@@ -56,12 +56,27 @@ pipeline {
         }
 
         stage('Deploy to ECS') {
-            steps {
-                sh '''
-                    aws ecs update-service --cluster $CLUSTER_NAME --service $BACKEND_SERVICE --force-new-deployment --region $AWS_REGION
-                    aws ecs update-service --cluster $CLUSTER_NAME --service $FRONTEND_SERVICE --force-new-deployment --region $AWS_REGION
-                '''
-            }
+    steps {
+        withCredentials([[
+            $class: 'AmazonWebServicesCredentialsBinding',
+            credentialsId: 'aws-ecs-credentials',
+            accessKeyVariable: 'AWS_ACCESS_KEY_ID',
+            secretKeyVariable: 'AWS_SECRET_ACCESS_KEY'
+        ]]) {
+            sh '''
+                aws ecs update-service \
+                    --cluster $CLUSTER_NAME \
+                    --service $BACKEND_SERVICE \
+                    --force-new-deployment \
+                    --region $AWS_REGION
+
+                aws ecs update-service \
+                    --cluster $CLUSTER_NAME \
+                    --service $FRONTEND_SERVICE \
+                    --force-new-deployment \
+                    --region $AWS_REGION
+            '''
         }
     }
+}
 }
