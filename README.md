@@ -1,0 +1,19 @@
+# Private 3-Tier Application on AWS ECS Fargate
+
+This project is a private 3-tier application deployed on AWS using:
+
+- Frontend (React)
+- Backend (Node.js)
+- RDS (PostgreSQL)
+- Redis (with EFS)
+- ECS Fargate
+- Application Load Balancer
+- Jenkins CI/CD
+
+## Architecture
+
+- Frontend & Backend running on ECS Fargate
+- Internal/Public ALB
+- RDS for permanent storage
+- Redis for caching
+- Jenkins for CI/CD
