@@ -17,3 +17,5 @@ This project is a private 3-tier application deployed on AWS using:
 - RDS for permanent storage
 - Redis for caching
 - Jenkins for CI/CD
+
+This is a private 3 tier application using AWS and Fargate.
