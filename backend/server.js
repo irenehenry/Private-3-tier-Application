@@ -5,59 +5,90 @@ const redis = require('redis');
 const app = express();
 const port = 8080;
 
-// PostgreSQL connection
 const pool = new Pool({
   host: process.env.DB_HOST,
   user: process.env.DB_USER,
   password: process.env.DB_PASSWORD,
   database: process.env.DB_NAME || 'postgres',
-  port: process.env.DB_PORT || 5432,
+  port: Number(process.env.DB_PORT || 5432),
 });
 
-// Redis connection
 const redisClient = redis.createClient({
-  url: `redis://${process.env.REDIS_HOST}:${process.env.REDIS_PORT || 6379}`
+  socket: {
+    host: process.env.REDIS_HOST,
+    port: Number(process.env.REDIS_PORT || 6379),
+  },
 });
 
-redisClient.connect().catch(console.error);
+redisClient.on('error', (error) => {
+  console.error('Redis Client Error:', error);
+});
+
+async function connectRedis() {
+  try {
+    await redisClient.connect();
+    console.log('Redis connected successfully');
+  } catch (error) {
+    console.error('Redis connection failed:', error);
+  }
+}
+
+connectRedis();
 
 app.get('/', (req, res) => {
-  res.send('Backend is running successfully!');
+  res.status(200).send('Backend is running successfully!');
+});
+
+app.get('/health', (req, res) => {
+  res.status(200).json({
+    status: 'healthy',
+    service: 'backend',
+  });
 });
 
 app.get('/api/data', async (req, res) => {
   try {
-    // First check Redis
-    const cachedData = await redisClient.get('sample_data');
-    
-    if (cachedData) {
-      return res.json({
-        source: 'Redis Cache',
-        data: JSON.parse(cachedData)
-      });
+    if (redisClient.isReady) {
+      const cachedData = await redisClient.get('sample_data');
+
+      if (cachedData) {
+        return res.json({
+          source: 'Redis Cache',
+          data: JSON.parse(cachedData),
+        });
+      }
     }
 
-    // If not in Redis, get from RDS
-    const result = await pool.query('SELECT NOW() as current_time');
-    
+    const result = await pool.query(
+      'SELECT NOW() AS current_time'
+    );
+
     const data = {
-      message: 'Data from RDS',
-      time: result.rows[0].current_time
+      message: 'Data from RDS PostgreSQL',
+      time: result.rows[0].current_time,
     };
 
-    // Store in Redis for 60 seconds
-    await redisClient.setEx('sample_data', 60, JSON.stringify(data));
+    if (redisClient.isReady) {
+      await redisClient.setEx(
+        'sample_data',
+        60,
+        JSON.stringify(data)
+      );
+    }
 
-    res.json({
+    return res.json({
       source: 'RDS Database',
-      data: data
+      data,
     });
-
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    console.error('API error:', error);
+
+    return res.status(500).json({
+      error: error.message,
+    });
   }
 });
 
-app.listen(port, () => {
+app.listen(port, '0.0.0.0', () => {
   console.log(`Backend running on port ${port}`);
 });
