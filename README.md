@@ -24,3 +24,6 @@ This created by Irene Henry.
 This is a private 3 tier application using AWS and Fargate.
 This created by Irene Henry.
 
+
+test commands
+
