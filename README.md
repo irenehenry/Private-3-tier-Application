@@ -42,3 +42,5 @@ test 5
 This is a private 3 tier application using AWS and Fargate.
 test 6
 This is a private 3 tier application using AWS and Fargate.
+test 7
+This is a private 3 tier application using AWS and Fargate.
